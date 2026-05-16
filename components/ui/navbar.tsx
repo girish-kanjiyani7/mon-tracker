@@ -1,0 +1,52 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+const navLinks = [
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/accounts", label: "Accounts" },
+  { href: "/transactions", label: "Transactions" },
+  { href: "/budgets", label: "Budgets" },
+];
+
+export function Navbar() {
+  const pathname = usePathname();
+
+  return (
+    <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/80 backdrop-blur-xl">
+      <div className="mx-auto flex h-14 max-w-7xl items-center gap-8 px-6">
+        <Link href="/dashboard" className="flex items-center gap-2 shrink-0">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/25">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M7 1L13 4V10L7 13L1 10V4L7 1Z" fill="white" fillOpacity="0.9" />
+            </svg>
+          </div>
+          <span className="text-sm font-semibold tracking-tight">Mon Tracker</span>
+        </Link>
+
+        <nav className="flex items-center gap-1">
+          {navLinks.map((link) => {
+            const active = pathname === link.href || pathname.startsWith(link.href + "/");
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`relative px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  active
+                    ? "text-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                }`}
+              >
+                {link.label}
+                {active && (
+                  <span className="absolute inset-x-2 -bottom-[1px] h-px bg-gradient-to-r from-indigo-500 to-purple-500" />
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+    </header>
+  );
+}

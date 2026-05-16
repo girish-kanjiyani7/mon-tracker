@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Item {
+  id              String    @id @default(cuid())
+  plaidItemId     String    @unique
+  accessToken     String
+  institutionId   String
+  institutionName String
+  accounts        Account[]
+  createdAt       DateTime  @default(now())
+}
+
+model Account {
+  id             String        @id @default(cuid())
+  plaidAccountId String        @unique
+  item           Item          @relation(fields: [itemId], references: [id])
+  itemId         String
+  name           String
+  officialName   String?
+  type           String
+  subtype        String?
+  balance        Float         @default(0)
+  cursor         String?
+  transactions   Transaction[]
+  updatedAt      DateTime      @updatedAt
+}
+
+model Transaction {
+  id                 String   @id @default(cuid())
+  plaidTransactionId String   @unique
+  account            Account  @relation(fields: [accountId], references: [id])
+  accountId          String
+  amount             Float
+  date               DateTime
+  merchantName       String?
+  name               String
+  category           String?
+  personalCategory   String?
+  pending            Boolean  @default(false)
+  createdAt          DateTime @default(now())
+}
+
+model Budget {
+  id           String @id @default(cuid())
+  category     String
+  monthlyLimit Float
+  month        String
+
+  @@unique([category, month])
+}
