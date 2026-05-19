@@ -1,3 +1,5 @@
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { NetWorthCard } from "@/components/dashboard/NetWorthCard";
 import { SpendingByCategory } from "@/components/dashboard/SpendingByCategory";
@@ -8,6 +10,8 @@ import { groupByCategory, getCurrentMonth } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
+  const session = await auth();
+  if (!session) redirect("/");
   const month = getCurrentMonth();
   const [year, mon] = month.split("-").map(Number);
   const start = new Date(year, mon - 1, 1);
