@@ -15,7 +15,7 @@ export function Navbar() {
   const pathname = usePathname();
   const { data: session } = useSession();
 
-  if (pathname === "/login") return null;
+  if (pathname === "/" || pathname === "/login") return null;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/80 backdrop-blur-xl">
