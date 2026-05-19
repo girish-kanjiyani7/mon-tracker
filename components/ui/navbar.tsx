@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 const navLinks = [
   { href: "/dashboard", label: "Dashboard" },
@@ -12,6 +12,12 @@ const navLinks = [
 
 export function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await fetch("/api/auth", { method: "DELETE" });
+    router.push("/login");
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/80 backdrop-blur-xl">
@@ -25,7 +31,7 @@ export function Navbar() {
           <span className="text-sm font-semibold tracking-tight">Mon Tracker</span>
         </Link>
 
-        <nav className="flex items-center gap-1">
+        <nav className="flex flex-1 items-center gap-1">
           {navLinks.map((link) => {
             const active = pathname === link.href || pathname.startsWith(link.href + "/");
             return (
@@ -46,6 +52,15 @@ export function Navbar() {
             );
           })}
         </nav>
+
+        {process.env.NEXT_PUBLIC_AUTH_ENABLED === "true" && (
+          <button
+            onClick={handleLogout}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Sign out
+          </button>
+        )}
       </div>
     </header>
   );

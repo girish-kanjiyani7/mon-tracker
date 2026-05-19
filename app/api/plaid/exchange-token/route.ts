@@ -2,12 +2,24 @@ import { NextRequest, NextResponse } from "next/server";
 import { plaidClient } from "@/lib/plaid";
 import { prisma } from "@/lib/db";
 
+const PUBLIC_TOKEN_PATTERN = /^public-[a-z]+-[a-zA-Z0-9_-]+$/;
+const MAX_NAME_LENGTH = 200;
+
 export async function POST(req: NextRequest) {
   try {
-    const { public_token, institution_id, institution_name } = await req.json();
+    const body = await req.json();
+    const { public_token, institution_id, institution_name } = body;
 
-    if (!public_token || typeof public_token !== "string") {
+    if (!public_token || typeof public_token !== "string" || !PUBLIC_TOKEN_PATTERN.test(public_token)) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    }
+
+    if (institution_id !== undefined && (typeof institution_id !== "string" || institution_id.length > MAX_NAME_LENGTH)) {
+      return NextResponse.json({ error: "Invalid institution_id" }, { status: 400 });
+    }
+
+    if (institution_name !== undefined && (typeof institution_name !== "string" || institution_name.length > MAX_NAME_LENGTH)) {
+      return NextResponse.json({ error: "Invalid institution_name" }, { status: 400 });
     }
 
     const exchangeResponse = await plaidClient.itemPublicTokenExchange({ public_token });
