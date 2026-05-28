@@ -9,6 +9,7 @@ interface Budget {
 
 interface Transaction {
   category?: string | null;
+  personalCategory?: string | null;
   amount: number;
 }
 
@@ -38,7 +39,7 @@ export function BudgetProgress({ budgets, transactions }: Props) {
       <div className="mt-4 space-y-4">
         {budgets.map((budget) => {
           const spent = transactions
-            .filter((t) => t.category === budget.category && t.amount > 0)
+            .filter((t) => (t.personalCategory ?? t.category) === budget.category && t.amount > 0)
             .reduce((sum, t) => sum + t.amount, 0);
           const pct = Math.min((spent / budget.monthlyLimit) * 100, 100);
           const over = spent > budget.monthlyLimit;

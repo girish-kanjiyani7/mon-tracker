@@ -13,6 +13,7 @@ interface Budget {
 
 interface Transaction {
   category?: string | null;
+  personalCategory?: string | null;
   amount: number;
 }
 
@@ -63,7 +64,7 @@ export default function BudgetsPage() {
   const totalBudgeted = budgets.reduce((s, b) => s + b.monthlyLimit, 0);
   const totalSpent = budgets.reduce((s, b) => {
     return s + transactions
-      .filter((t) => t.category === b.category && t.amount > 0)
+      .filter((t) => (t.personalCategory ?? t.category) === b.category && t.amount > 0)
       .reduce((sum, t) => sum + t.amount, 0);
   }, 0);
 

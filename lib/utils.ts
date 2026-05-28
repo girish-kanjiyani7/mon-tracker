@@ -26,12 +26,12 @@ export function getCurrentMonth(): string {
 }
 
 export function groupByCategory(
-  transactions: Array<{ category?: string | null; amount: number }>
+  transactions: Array<{ category?: string | null; personalCategory?: string | null; amount: number }>
 ): Array<{ name: string; value: number }> {
   const map = new Map<string, number>();
   for (const tx of transactions) {
     if (tx.amount <= 0) continue; // skip credits/refunds
-    const cat = tx.category ?? "Other";
+    const cat = tx.personalCategory ?? tx.category ?? "Other";
     map.set(cat, (map.get(cat) ?? 0) + tx.amount);
   }
   return Array.from(map.entries())
