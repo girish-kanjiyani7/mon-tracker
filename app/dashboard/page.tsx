@@ -5,14 +5,23 @@ import { NetWorthCard } from "@/components/dashboard/NetWorthCard";
 import { SpendingByCategory } from "@/components/dashboard/SpendingByCategory";
 import { BudgetProgress } from "@/components/dashboard/BudgetProgress";
 import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
+import { MonthPicker } from "@/components/dashboard/MonthPicker";
 import { groupByCategory, getCurrentMonth } from "@/lib/utils";
+
+const MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ month?: string }>;
+}) {
   const session = await auth();
   if (!session) redirect("/");
-  const month = getCurrentMonth();
+
+  const { month: monthParam } = await searchParams;
+  const month = monthParam && MONTH_PATTERN.test(monthParam) ? monthParam : getCurrentMonth();
   const [year, mon] = month.split("-").map(Number);
   const start = new Date(year, mon - 1, 1);
   const end = new Date(year, mon, 1);
@@ -21,19 +30,20 @@ export default async function DashboardPage() {
     prisma.account.findMany({ include: { item: { select: { institutionName: true } } } }),
     prisma.transaction.findMany({ where: { date: { gte: start, lt: end } } }),
     prisma.budget.findMany({ where: { month } }),
-    prisma.transaction.findMany({ orderBy: { date: "desc" }, take: 10 }),
+    prisma.transaction.findMany({ where: { date: { gte: start, lt: end } }, orderBy: { date: "desc" }, take: 10 }),
   ]);
 
   const categoryData = groupByCategory(transactions);
-
-  const now = new Date();
-  const monthLabel = now.toLocaleString("default", { month: "long", year: "numeric" });
+  const monthLabel = new Date(year, mon - 1, 1).toLocaleString("default", { month: "long", year: "numeric" });
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-1">{monthLabel}</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-sm text-muted-foreground mt-1">{monthLabel}</p>
+        </div>
+        <MonthPicker value={month} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

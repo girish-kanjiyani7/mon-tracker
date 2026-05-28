@@ -4,6 +4,8 @@ import { prisma } from "@/lib/db";
 const MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 const MAX_SEARCH_LENGTH = 200;
 const MAX_PARAM_LENGTH = 100;
+const DEFAULT_LIMIT = 25;
+const MAX_LIMIT = 100;
 
 export async function GET(req: NextRequest) {
   try {
@@ -12,6 +14,8 @@ export async function GET(req: NextRequest) {
     const category = searchParams.get("category") ?? undefined;
     const search = searchParams.get("search") ?? undefined;
     const month = searchParams.get("month");
+    const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
+    const limit = Math.min(MAX_LIMIT, Math.max(1, parseInt(searchParams.get("limit") ?? String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT));
 
     if (month !== null && !MONTH_PATTERN.test(month)) {
       return NextResponse.json({ error: "Invalid month format. Use YYYY-MM." }, { status: 400 });
@@ -37,14 +41,18 @@ export async function GET(req: NextRequest) {
       where.date = { gte: start, lt: end };
     }
 
-    const transactions = await prisma.transaction.findMany({
-      where,
-      include: { account: { select: { name: true, item: { select: { institutionName: true } } } } },
-      orderBy: { date: "desc" },
-      take: 500,
-    });
+    const [data, total] = await prisma.$transaction([
+      prisma.transaction.findMany({
+        where,
+        include: { account: { select: { name: true, item: { select: { institutionName: true } } } } },
+        orderBy: { date: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.transaction.count({ where }),
+    ]);
 
-    return NextResponse.json(transactions);
+    return NextResponse.json({ data, total });
   } catch {
     return NextResponse.json({ error: "Failed to fetch transactions" }, { status: 500 });
   }

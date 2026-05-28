@@ -14,35 +14,83 @@ interface Transaction {
   account: { name: string; item: { institutionName: string } };
 }
 
+const CATEGORIES = [
+  "FOOD_AND_DRINK",
+  "TRAVEL",
+  "TRANSPORTATION",
+  "SHOPPING",
+  "ENTERTAINMENT",
+  "GENERAL_MERCHANDISE",
+  "RENT_AND_UTILITIES",
+  "MEDICAL",
+  "PERSONAL_CARE",
+  "EDUCATION",
+  "OTHER",
+];
+
+const selectCls =
+  "h-9 rounded-lg border border-border/60 bg-card px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary";
+
+const PAGE_SIZE = 25;
+
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [total, setTotal] = useState(0);
   const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("");
+  const [month, setMonth] = useState("");
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+
+  const hasFilters = search !== "" || category !== "" || month !== "";
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams();
     if (search) params.set("search", search);
+    if (category) params.set("category", category);
+    if (month) params.set("month", month);
+    params.set("page", String(page));
+    params.set("limit", String(PAGE_SIZE));
     const res = await fetch(`/api/transactions?${params}`);
-    const data = await res.json();
-    if (Array.isArray(data)) setTransactions(data);
+    const json = await res.json();
+    if (json && Array.isArray(json.data)) {
+      setTransactions(json.data);
+      setTotal(json.total ?? 0);
+    }
     setLoading(false);
-  }, [search]);
+  }, [search, category, month, page]);
 
   useEffect(() => {
     const t = setTimeout(fetchTransactions, 300);
     return () => clearTimeout(t);
   }, [fetchTransactions]);
 
+  function clearFilters() {
+    setSearch("");
+    setCategory("");
+    setMonth("");
+    setPage(1);
+  }
+
+  function handleFilterChange(setter: (v: string) => void) {
+    return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+      setter(e.target.value);
+      setPage(1);
+    };
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Transactions</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {loading ? "Loading…" : `${transactions.length} transactions`}
-          </p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Transactions</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          {loading ? "Loading…" : total === 0 ? "0 transactions" : `${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, total)} of ${total} transaction${total !== 1 ? "s" : ""}`}
+        </p>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
         <div className="relative">
           <svg
             className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground"
@@ -54,10 +102,37 @@ export default function TransactionsPage() {
             type="search"
             placeholder="Search merchants…"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-9 rounded-lg border border-border/60 bg-card pl-8 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary w-56"
+            onChange={handleFilterChange(setSearch)}
+            className="h-9 rounded-lg border border-border/60 bg-card pl-8 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary w-52"
           />
         </div>
+
+        <select
+          value={category}
+          onChange={handleFilterChange(setCategory)}
+          className={selectCls}
+        >
+          <option value="">All categories</option>
+          {CATEGORIES.map((c) => (
+            <option key={c} value={c}>{formatCategoryName(c)}</option>
+          ))}
+        </select>
+
+        <input
+          type="month"
+          value={month}
+          onChange={handleFilterChange(setMonth)}
+          className={selectCls}
+        />
+
+        {hasFilters && (
+          <button
+            onClick={clearFilters}
+            className="h-9 rounded-lg border border-border/60 px-3 text-sm text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+          >
+            Clear
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -66,7 +141,7 @@ export default function TransactionsPage() {
         </div>
       ) : transactions.length === 0 ? (
         <div className="rounded-2xl border border-border/60 bg-card px-6 py-16 text-center text-sm text-muted-foreground">
-          No transactions found. Sync your accounts first.
+          {hasFilters ? "No transactions match your filters." : "No transactions found. Sync your accounts first."}
         </div>
       ) : (
         <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
@@ -118,6 +193,28 @@ export default function TransactionsPage() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {!loading && totalPages > 1 && (
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">Page {page} of {totalPages}</span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage((p) => p - 1)}
+              disabled={page === 1}
+              className="h-9 rounded-lg border border-border/60 px-4 text-sm disabled:opacity-40 hover:bg-white/5 transition-colors"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setPage((p) => p + 1)}
+              disabled={page === totalPages}
+              className="h-9 rounded-lg border border-border/60 px-4 text-sm disabled:opacity-40 hover:bg-white/5 transition-colors"
+            >
+              Next
+            </button>
+          </div>
         </div>
       )}
     </div>
