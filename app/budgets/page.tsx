@@ -33,7 +33,7 @@ export default function BudgetsPage() {
     ]);
     const [budgetsData, txData] = await Promise.all([budgetsRes.json(), txRes.json()]);
     if (Array.isArray(budgetsData)) setBudgets(budgetsData);
-    if (Array.isArray(txData)) setTransactions(txData);
+    if (Array.isArray(txData?.data)) setTransactions(txData.data);
   }, [month]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
