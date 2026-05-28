@@ -2,31 +2,19 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { formatCurrency, formatDate, formatCategoryName } from "@/lib/utils";
+import { CATEGORIES } from "@/lib/categories";
 
 interface Transaction {
   id: string;
   name: string;
   merchantName: string | null;
   category: string | null;
+  personalCategory: string | null;
   amount: number;
   date: string;
   pending: boolean;
   account: { name: string; item: { institutionName: string } };
 }
-
-const CATEGORIES = [
-  "FOOD_AND_DRINK",
-  "TRAVEL",
-  "TRANSPORTATION",
-  "SHOPPING",
-  "ENTERTAINMENT",
-  "GENERAL_MERCHANDISE",
-  "RENT_AND_UTILITIES",
-  "MEDICAL",
-  "PERSONAL_CARE",
-  "EDUCATION",
-  "OTHER",
-];
 
 const selectCls =
   "h-9 rounded-lg border border-border/60 bg-card px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary";
@@ -41,6 +29,7 @@ export default function TransactionsPage() {
   const [month, setMonth] = useState("");
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const hasFilters = search !== "" || category !== "" || month !== "";
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -72,6 +61,19 @@ export default function TransactionsPage() {
     setCategory("");
     setMonth("");
     setPage(1);
+  }
+
+  async function handleCategoryChange(id: string, value: string) {
+    const personalCategory = value === "" ? null : value;
+    await fetch(`/api/transactions/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ personalCategory }),
+    });
+    setTransactions((prev) =>
+      prev.map((tx) => (tx.id === id ? { ...tx, personalCategory } : tx))
+    );
+    setEditingId(null);
   }
 
   function handleFilterChange(setter: (v: string) => void) {
@@ -175,12 +177,35 @@ export default function TransactionsPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4 hidden md:table-cell">
-                    {tx.category ? (
-                      <span className="inline-flex items-center rounded-md border border-border/60 px-2 py-0.5 text-xs text-muted-foreground">
-                        {formatCategoryName(tx.category)}
-                      </span>
+                    {editingId === tx.id ? (
+                      <select
+                        autoFocus
+                        defaultValue={tx.personalCategory ?? tx.category ?? ""}
+                        onBlur={(e) => handleCategoryChange(tx.id, e.target.value)}
+                        onChange={(e) => handleCategoryChange(tx.id, e.target.value)}
+                        className="h-7 rounded-md border border-primary/60 bg-card px-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                      >
+                        <option value="">Uncategorized</option>
+                        {CATEGORIES.map((c) => (
+                          <option key={c} value={c}>{formatCategoryName(c)}</option>
+                        ))}
+                      </select>
                     ) : (
-                      <span className="text-muted-foreground/40">—</span>
+                      <button
+                        onClick={() => setEditingId(tx.id)}
+                        className="group inline-flex items-center gap-1.5"
+                        title="Click to change category"
+                      >
+                        {(tx.personalCategory ?? tx.category) ? (
+                          <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs transition-colors ${tx.personalCategory ? "border-primary/50 text-primary" : "border-border/60 text-muted-foreground group-hover:border-primary/40"}`}>
+                            {formatCategoryName(tx.personalCategory ?? tx.category!)}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground/40 group-hover:text-muted-foreground transition-colors text-xs">
+                            + set category
+                          </span>
+                        )}
+                      </button>
                     )}
                   </td>
                   <td className="px-6 py-4 hidden lg:table-cell text-xs text-muted-foreground">

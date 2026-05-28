@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { formatCurrency, formatCategoryName, getCurrentMonth } from "@/lib/utils";
+import { CATEGORIES } from "@/lib/categories";
 
 interface Budget {
   id: string;
@@ -15,17 +16,12 @@ interface Transaction {
   amount: number;
 }
 
-const CATEGORIES = [
-  "FOOD_AND_DRINK", "TRAVEL", "TRANSPORTATION", "SHOPPING",
-  "ENTERTAINMENT", "GENERAL_MERCHANDISE", "RENT_AND_UTILITIES",
-  "MEDICAL", "PERSONAL_CARE", "EDUCATION", "OTHER",
-];
 
 export default function BudgetsPage() {
   const month = getCurrentMonth();
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [category, setCategory] = useState(CATEGORIES[0]);
+  const [category, setCategory] = useState<string>(CATEGORIES[0]);
   const [limit, setLimit] = useState("");
   const [saving, setSaving] = useState(false);
 

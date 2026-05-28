@@ -44,7 +44,11 @@ export async function GET(req: NextRequest) {
     const [data, total] = await prisma.$transaction([
       prisma.transaction.findMany({
         where,
-        include: { account: { select: { name: true, item: { select: { institutionName: true } } } } },
+        select: {
+          id: true, name: true, merchantName: true, category: true, personalCategory: true,
+          amount: true, date: true, pending: true,
+          account: { select: { name: true, item: { select: { institutionName: true } } } },
+        },
         orderBy: { date: "desc" },
         skip: (page - 1) * limit,
         take: limit,
