@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { formatCurrency, formatCategoryName, getCurrentMonth } from "@/lib/utils";
 import { CATEGORIES } from "@/lib/categories";
+import { MonthPicker } from "@/components/dashboard/MonthPicker";
 
 interface Budget {
   id: string;
@@ -17,9 +19,13 @@ interface Transaction {
   amount: number;
 }
 
+const MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 export default function BudgetsPage() {
-  const month = getCurrentMonth();
+  const searchParams = useSearchParams();
+  const monthParam = searchParams.get("month");
+  const month = monthParam && MONTH_PATTERN.test(monthParam) ? monthParam : getCurrentMonth();
+
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [category, setCategory] = useState<string>(CATEGORIES[0]);
@@ -68,11 +74,20 @@ export default function BudgetsPage() {
       .reduce((sum, t) => sum + t.amount, 0);
   }, 0);
 
+  const monthLabel = new Date(
+    Number(month.split("-")[0]),
+    Number(month.split("-")[1]) - 1,
+    1
+  ).toLocaleString("default", { month: "long", year: "numeric" });
+
   return (
     <div className="space-y-6 max-w-2xl">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Budgets</h1>
-        <p className="text-sm text-muted-foreground mt-1">{month}</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Budgets</h1>
+          <p className="text-sm text-muted-foreground mt-1">{monthLabel}</p>
+        </div>
+        <MonthPicker value={month} />
       </div>
 
       {budgets.length > 0 && (
@@ -127,7 +142,7 @@ export default function BudgetsPage() {
         <div className="space-y-3">
           {budgets.map((budget) => {
             const spent = transactions
-              .filter((t) => t.category === budget.category && t.amount > 0)
+              .filter((t) => (t.personalCategory ?? t.category) === budget.category && t.amount > 0)
               .reduce((sum, t) => sum + t.amount, 0);
             const pct = Math.min((spent / budget.monthlyLimit) * 100, 100);
             const over = spent > budget.monthlyLimit;

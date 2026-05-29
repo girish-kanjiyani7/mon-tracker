@@ -1,14 +1,15 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 export function MonthPicker({ value }: { value: string }) {
   const router = useRouter();
+  const pathname = usePathname();
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const params = new URLSearchParams();
     if (e.target.value) params.set("month", e.target.value);
-    router.push(`/dashboard?${params}`);
+    router.push(`${pathname}?${params}`);
   }
 
   return (
