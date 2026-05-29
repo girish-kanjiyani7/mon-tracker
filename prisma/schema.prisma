@@ -49,10 +49,12 @@ model Transaction {
 }
 
 model Budget {
-  id           String @id @default(cuid())
+  id           String  @id @default(cuid())
   category     String
   monthlyLimit Float
   month        String
+  rollover     Boolean @default(false)
+  alertAt      Float   @default(0.8)
 
   @@unique([category, month])
 }

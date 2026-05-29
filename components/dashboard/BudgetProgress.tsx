@@ -5,6 +5,7 @@ interface Budget {
   id: string;
   category: string;
   monthlyLimit: number;
+  alertAt: number;
 }
 
 interface Transaction {
@@ -41,14 +42,21 @@ export function BudgetProgress({ budgets, transactions }: Props) {
           const spent = transactions
             .filter((t) => (t.personalCategory ?? t.category) === budget.category && t.amount > 0)
             .reduce((sum, t) => sum + t.amount, 0);
-          const pct = Math.min((spent / budget.monthlyLimit) * 100, 100);
-          const over = spent > budget.monthlyLimit;
+          const pct = budget.monthlyLimit > 0 ? spent / budget.monthlyLimit : 0;
+          const over = pct > 1;
+          const atRisk = !over && pct >= budget.alertAt;
+
+          const barColor = over
+            ? "oklch(0.65 0.22 25)"
+            : atRisk
+            ? "oklch(0.75 0.18 75)"
+            : "linear-gradient(90deg, oklch(0.65 0.22 280), oklch(0.65 0.22 320))";
 
           return (
             <div key={budget.id} className="space-y-1.5">
               <div className="flex justify-between text-xs">
                 <span className="font-medium">{formatCategoryName(budget.category)}</span>
-                <span className={over ? "text-rose-400 font-semibold" : "text-muted-foreground"}>
+                <span className={over ? "text-rose-400 font-semibold" : atRisk ? "text-amber-400" : "text-muted-foreground"}>
                   {formatCurrency(spent)}
                   <span className="text-muted-foreground/60"> / {formatCurrency(budget.monthlyLimit)}</span>
                 </span>
@@ -56,12 +64,7 @@ export function BudgetProgress({ budgets, transactions }: Props) {
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                 <div
                   className="h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${pct}%`,
-                    background: over
-                      ? "oklch(0.65 0.22 25)"
-                      : `linear-gradient(90deg, oklch(0.65 0.22 280), oklch(0.65 0.22 320))`,
-                  }}
+                  style={{ width: `${Math.min(pct * 100, 100)}%`, background: barColor }}
                 />
               </div>
             </div>
