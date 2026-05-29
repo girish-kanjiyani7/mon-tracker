@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { formatCurrency, formatCategoryName, getCurrentMonth } from "@/lib/utils";
 import { CATEGORIES } from "@/lib/categories";
@@ -21,7 +21,7 @@ interface Transaction {
 
 const MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 
-export default function BudgetsPage() {
+function BudgetsContent() {
   const searchParams = useSearchParams();
   const monthParam = searchParams.get("month");
   const month = monthParam && MONTH_PATTERN.test(monthParam) ? monthParam : getCurrentMonth();
@@ -188,5 +188,13 @@ export default function BudgetsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function BudgetsPage() {
+  return (
+    <Suspense>
+      <BudgetsContent />
+    </Suspense>
   );
 }
