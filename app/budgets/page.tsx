@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { formatCurrency, formatCategoryName, getMonthRange } from "@/lib/utils";
-import { CATEGORIES } from "@/lib/categories";
+import { CATEGORY_GROUPS } from "@/lib/categories";
 import { DateRangePicker } from "@/components/DateRangePicker";
 
 interface Budget {
@@ -28,6 +28,8 @@ interface HistoryEntry {
 }
 
 const DATE_PATTERN = /^\d{4}-(0[1-9]|1[0-2])-([0-2]\d|3[01])$/;
+const ALL_CATEGORIES = Object.values(CATEGORY_GROUPS).flat();
+const FIRST_CATEGORY = ALL_CATEGORIES[0];
 
 function statusFor(pct: number, alertAt: number): "over" | "at-risk" | "on-track" {
   if (pct > 1) return "over";
@@ -46,7 +48,7 @@ function BudgetsContent() {
 
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [category, setCategory] = useState<string>(CATEGORIES[0]);
+  const [category, setCategory] = useState<string>(FIRST_CATEGORY);
   const [limit, setLimit] = useState("");
   const [saving, setSaving] = useState(false);
   const [copying, setCopying] = useState(false);
@@ -263,8 +265,12 @@ function BudgetsContent() {
             onChange={(e) => setCategory(e.target.value)}
             className="h-9 rounded-lg border border-border/60 bg-muted px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
           >
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>{formatCategoryName(c)}</option>
+            {Object.entries(CATEGORY_GROUPS).map(([group, cats]) => (
+              <optgroup key={group} label={group}>
+                {cats.map((c) => (
+                  <option key={c} value={c}>{formatCategoryName(c)}</option>
+                ))}
+              </optgroup>
             ))}
           </select>
           <input

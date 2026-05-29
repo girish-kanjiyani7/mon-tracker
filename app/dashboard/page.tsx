@@ -6,6 +6,7 @@ import { SpendingByCategory } from "@/components/dashboard/SpendingByCategory";
 import { BudgetProgress } from "@/components/dashboard/BudgetProgress";
 import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
 import { DateRangePicker } from "@/components/DateRangePicker";
+import { QuickAddTransaction } from "@/components/dashboard/QuickAddTransaction";
 import { groupByCategory, getMonthRange, getCurrentMonth } from "@/lib/utils";
 
 const DATE_PATTERN = /^\d{4}-(0[1-9]|1[0-2])-([0-2]\d|3[01])$/;
@@ -35,7 +36,12 @@ export default async function DashboardPage({
     prisma.account.findMany({ include: { item: { select: { institutionName: true } } } }),
     prisma.transaction.findMany({ where: { date: { gte: start, lt: end } } }),
     prisma.budget.findMany({ where: { month } }),
-    prisma.transaction.findMany({ where: { date: { gte: start, lt: end } }, orderBy: { date: "desc" }, take: 10 }),
+    prisma.transaction.findMany({
+      where: { date: { gte: start, lt: end } },
+      select: { id: true, name: true, merchantName: true, category: true, personalCategory: true, amount: true, date: true, pending: true },
+      orderBy: { date: "desc" },
+      take: 10,
+    }),
   ]);
 
   const categoryData = groupByCategory(transactions);
@@ -57,6 +63,7 @@ export default async function DashboardPage({
       </div>
 
       <RecentTransactions transactions={recentTx} />
+      <QuickAddTransaction />
     </div>
   );
 }

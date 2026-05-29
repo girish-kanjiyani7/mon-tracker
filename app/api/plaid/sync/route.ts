@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { plaidClient } from "@/lib/plaid";
 import { prisma } from "@/lib/db";
+import { PLAID_TO_CATEGORY } from "@/lib/categories";
 
 export async function POST() {
   try {
@@ -32,7 +33,7 @@ export async function POST() {
               pending: tx.pending,
               merchantName: tx.merchant_name ?? null,
               name: tx.name,
-              category: tx.personal_finance_category?.primary ?? null,
+              category: PLAID_TO_CATEGORY[tx.personal_finance_category?.primary ?? ""] ?? tx.personal_finance_category?.primary ?? null,
             },
             create: {
               plaidTransactionId: tx.transaction_id,
@@ -41,7 +42,7 @@ export async function POST() {
               date: new Date(tx.date),
               merchantName: tx.merchant_name ?? null,
               name: tx.name,
-              category: tx.personal_finance_category?.primary ?? null,
+              category: PLAID_TO_CATEGORY[tx.personal_finance_category?.primary ?? ""] ?? tx.personal_finance_category?.primary ?? null,
               pending: tx.pending,
             },
           });

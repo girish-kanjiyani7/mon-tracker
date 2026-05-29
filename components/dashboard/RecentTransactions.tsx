@@ -7,6 +7,7 @@ interface Transaction {
   name: string;
   merchantName: string | null;
   category: string | null;
+  personalCategory: string | null;
   amount: number;
   date: string | Date;
   pending: boolean;
@@ -41,9 +42,9 @@ export function RecentTransactions({ transactions }: { transactions: Transaction
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
-                {tx.category && (
+                {(tx.personalCategory ?? tx.category) && (
                   <span className="hidden sm:inline-flex items-center rounded-md border border-border/60 px-2 py-0.5 text-xs text-muted-foreground">
-                    {formatCategoryName(tx.category)}
+                    {formatCategoryName(tx.personalCategory ?? tx.category!)}
                   </span>
                 )}
                 {tx.pending && (

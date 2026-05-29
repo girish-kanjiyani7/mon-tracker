@@ -35,9 +35,9 @@ model Account {
 
 model Transaction {
   id                 String   @id @default(cuid())
-  plaidTransactionId String   @unique
-  account            Account  @relation(fields: [accountId], references: [id])
-  accountId          String
+  plaidTransactionId String?  @unique
+  account            Account? @relation(fields: [accountId], references: [id])
+  accountId          String?
   amount             Float
   date               DateTime
   merchantName       String?
@@ -45,6 +45,7 @@ model Transaction {
   category           String?
   personalCategory   String?
   pending            Boolean  @default(false)
+  manual             Boolean  @default(false)
   createdAt          DateTime @default(now())
 }
 
