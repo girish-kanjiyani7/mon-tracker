@@ -25,6 +25,16 @@ export function getCurrentMonth(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
+export function getMonthRange(date = new Date()): { from: string; to: string } {
+  const y = date.getFullYear();
+  const m = date.getMonth();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const from = `${y}-${pad(m + 1)}-01`;
+  const lastDay = new Date(y, m + 1, 0).getDate();
+  const to = `${y}-${pad(m + 1)}-${pad(lastDay)}`;
+  return { from, to };
+}
+
 export function groupByCategory(
   transactions: Array<{ category?: string | null; personalCategory?: string | null; amount: number }>
 ): Array<{ name: string; value: number }> {

@@ -2,9 +2,9 @@
 
 import { useEffect, useState, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { formatCurrency, formatCategoryName, getCurrentMonth } from "@/lib/utils";
+import { formatCurrency, formatCategoryName, getMonthRange } from "@/lib/utils";
 import { CATEGORIES } from "@/lib/categories";
-import { MonthPicker } from "@/components/dashboard/MonthPicker";
+import { DateRangePicker } from "@/components/DateRangePicker";
 
 interface Budget {
   id: string;
@@ -19,12 +19,18 @@ interface Transaction {
   amount: number;
 }
 
-const MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
+const DATE_PATTERN = /^\d{4}-(0[1-9]|1[0-2])-([0-2]\d|3[01])$/;
 
 function BudgetsContent() {
   const searchParams = useSearchParams();
-  const monthParam = searchParams.get("month");
-  const month = monthParam && MONTH_PATTERN.test(monthParam) ? monthParam : getCurrentMonth();
+  const defaults = getMonthRange();
+  const fromParam = searchParams.get("from");
+  const toParam = searchParams.get("to");
+  const from = fromParam && DATE_PATTERN.test(fromParam) ? fromParam : defaults.from;
+  const to = toParam && DATE_PATTERN.test(toParam) ? toParam : defaults.to;
+
+  // Derive YYYY-MM for budget lookup from the "from" date
+  const month = from.slice(0, 7);
 
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -35,12 +41,12 @@ function BudgetsContent() {
   const fetchData = useCallback(async () => {
     const [budgetsRes, txRes] = await Promise.all([
       fetch(`/api/budgets?month=${month}`),
-      fetch(`/api/transactions?month=${month}&limit=1000`),
+      fetch(`/api/transactions?from=${from}&to=${to}&limit=1000`),
     ]);
     const [budgetsData, txData] = await Promise.all([budgetsRes.json(), txRes.json()]);
     if (Array.isArray(budgetsData)) setBudgets(budgetsData);
     if (Array.isArray(txData?.data)) setTransactions(txData.data);
-  }, [month]);
+  }, [month, from, to]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -74,20 +80,14 @@ function BudgetsContent() {
       .reduce((sum, t) => sum + t.amount, 0);
   }, 0);
 
-  const monthLabel = new Date(
-    Number(month.split("-")[0]),
-    Number(month.split("-")[1]) - 1,
-    1
-  ).toLocaleString("default", { month: "long", year: "numeric" });
-
   return (
     <div className="space-y-6 max-w-2xl">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Budgets</h1>
-          <p className="text-sm text-muted-foreground mt-1">{monthLabel}</p>
+          <p className="text-sm text-muted-foreground mt-1">{from} – {to}</p>
         </div>
-        <MonthPicker value={month} />
+        <DateRangePicker from={from} to={to} />
       </div>
 
       {budgets.length > 0 && (

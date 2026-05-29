@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { formatCurrency, formatDate, formatCategoryName, getCurrentMonth } from "@/lib/utils";
+import { formatCurrency, formatDate, formatCategoryName } from "@/lib/utils";
 import { CATEGORIES } from "@/lib/categories";
 
 interface Transaction {
@@ -26,12 +26,13 @@ export default function TransactionsPage() {
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
-  const [month, setMonth] = useState(getCurrentMonth());
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const hasFilters = search !== "" || category !== "" || month !== "";
+  const hasFilters = search !== "" || category !== "" || from !== "" || to !== "";
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const fetchTransactions = useCallback(async () => {
@@ -39,7 +40,8 @@ export default function TransactionsPage() {
     const params = new URLSearchParams();
     if (search) params.set("search", search);
     if (category) params.set("category", category);
-    if (month) params.set("month", month);
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
     params.set("page", String(page));
     params.set("limit", String(PAGE_SIZE));
     const res = await fetch(`/api/transactions?${params}`);
@@ -49,7 +51,7 @@ export default function TransactionsPage() {
       setTotal(json.total ?? 0);
     }
     setLoading(false);
-  }, [search, category, month, page]);
+  }, [search, category, from, to, page]);
 
   useEffect(() => {
     const t = setTimeout(fetchTransactions, 300);
@@ -59,7 +61,8 @@ export default function TransactionsPage() {
   function clearFilters() {
     setSearch("");
     setCategory("");
-    setMonth("");
+    setFrom("");
+    setTo("");
     setPage(1);
   }
 
@@ -121,9 +124,16 @@ export default function TransactionsPage() {
         </select>
 
         <input
-          type="month"
-          value={month}
-          onChange={handleFilterChange(setMonth)}
+          type="date"
+          value={from}
+          onChange={handleFilterChange(setFrom)}
+          className={selectCls}
+        />
+        <span className="text-xs text-muted-foreground">to</span>
+        <input
+          type="date"
+          value={to}
+          onChange={handleFilterChange(setTo)}
           className={selectCls}
         />
 

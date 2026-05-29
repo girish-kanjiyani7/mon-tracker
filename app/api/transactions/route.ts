@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
-const MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
+const DATE_PATTERN = /^\d{4}-(0[1-9]|1[0-2])-([0-2]\d|3[01])$/;
 const MAX_SEARCH_LENGTH = 200;
 const MAX_PARAM_LENGTH = 100;
 const DEFAULT_LIMIT = 25;
@@ -13,12 +13,16 @@ export async function GET(req: NextRequest) {
     const accountId = searchParams.get("accountId") ?? undefined;
     const category = searchParams.get("category") ?? undefined;
     const search = searchParams.get("search") ?? undefined;
-    const month = searchParams.get("month");
+    const from = searchParams.get("from");
+    const to = searchParams.get("to");
     const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
     const limit = Math.min(MAX_LIMIT, Math.max(1, parseInt(searchParams.get("limit") ?? String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT));
 
-    if (month !== null && !MONTH_PATTERN.test(month)) {
-      return NextResponse.json({ error: "Invalid month format. Use YYYY-MM." }, { status: 400 });
+    if (from !== null && !DATE_PATTERN.test(from)) {
+      return NextResponse.json({ error: "Invalid from date. Use YYYY-MM-DD." }, { status: 400 });
+    }
+    if (to !== null && !DATE_PATTERN.test(to)) {
+      return NextResponse.json({ error: "Invalid to date. Use YYYY-MM-DD." }, { status: 400 });
     }
     if (search && search.length > MAX_SEARCH_LENGTH) {
       return NextResponse.json({ error: "Search term too long" }, { status: 400 });
@@ -34,11 +38,15 @@ export async function GET(req: NextRequest) {
     if (accountId) where.accountId = accountId;
     if (category) where.category = category;
     if (search) where.name = { contains: search };
-    if (month) {
-      const [year, mon] = month.split("-").map(Number);
-      const start = new Date(year, mon - 1, 1);
-      const end = new Date(year, mon, 1);
-      where.date = { gte: start, lt: end };
+    if (from || to) {
+      const dateFilter: Record<string, Date> = {};
+      if (from) dateFilter.gte = new Date(from);
+      if (to) {
+        const toDate = new Date(to);
+        toDate.setDate(toDate.getDate() + 1);
+        dateFilter.lt = toDate;
+      }
+      where.date = dateFilter;
     }
 
     const [data, total] = await prisma.$transaction([
