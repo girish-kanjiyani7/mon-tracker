@@ -5,7 +5,7 @@ const MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 const MAX_SEARCH_LENGTH = 200;
 const MAX_PARAM_LENGTH = 100;
 const DEFAULT_LIMIT = 25;
-const MAX_LIMIT = 100;
+const MAX_LIMIT = 1000;
 
 export async function GET(req: NextRequest) {
   try {

@@ -29,7 +29,7 @@ export default function BudgetsPage() {
   const fetchData = useCallback(async () => {
     const [budgetsRes, txRes] = await Promise.all([
       fetch(`/api/budgets?month=${month}`),
-      fetch(`/api/transactions?month=${month}`),
+      fetch(`/api/transactions?month=${month}&limit=1000`),
     ]);
     const [budgetsData, txData] = await Promise.all([budgetsRes.json(), txRes.json()]);
     if (Array.isArray(budgetsData)) setBudgets(budgetsData);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { formatCurrency, formatDate, formatCategoryName } from "@/lib/utils";
+import { formatCurrency, formatDate, formatCategoryName, getCurrentMonth } from "@/lib/utils";
 import { CATEGORIES } from "@/lib/categories";
 
 interface Transaction {
@@ -26,7 +26,7 @@ export default function TransactionsPage() {
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
-  const [month, setMonth] = useState("");
+  const [month, setMonth] = useState(getCurrentMonth());
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
