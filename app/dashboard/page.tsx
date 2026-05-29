@@ -32,7 +32,7 @@ export default async function DashboardPage({
 
   const month = getCurrentMonth();
 
-  const [accounts, transactions, budgets, recentTx] = await Promise.all([
+  const [accounts, transactions, budgets, recentTx, manualTx] = await Promise.all([
     prisma.account.findMany({ include: { item: { select: { institutionName: true } } } }),
     prisma.transaction.findMany({ where: { date: { gte: start, lt: end } } }),
     prisma.budget.findMany({ where: { month } }),
@@ -42,7 +42,11 @@ export default async function DashboardPage({
       orderBy: { date: "desc" },
       take: 10,
     }),
+    prisma.transaction.findMany({ where: { manual: true }, select: { amount: true } }),
   ]);
+
+  // net manual cash: negative Plaid amount = income, so flip sign
+  const manualCash = manualTx.reduce((sum, t) => sum - t.amount, 0);
 
   const categoryData = groupByCategory(transactions);
 
@@ -57,7 +61,7 @@ export default async function DashboardPage({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <NetWorthCard accounts={accounts} />
+        <NetWorthCard accounts={accounts} manualCash={manualCash} />
         <SpendingByCategory data={categoryData} />
         <BudgetProgress budgets={budgets} transactions={transactions} />
       </div>

@@ -5,13 +5,14 @@ interface Account {
   balance: number;
 }
 
-export function NetWorthCard({ accounts }: { accounts: Account[] }) {
-  const assets = accounts
+export function NetWorthCard({ accounts, manualCash = 0 }: { accounts: Account[]; manualCash?: number }) {
+  const accountAssets = accounts
     .filter((a) => a.type !== "credit")
     .reduce((sum, a) => sum + a.balance, 0);
   const liabilities = accounts
     .filter((a) => a.type === "credit")
     .reduce((sum, a) => sum + a.balance, 0);
+  const assets = accountAssets + Math.max(0, manualCash);
   const netWorth = assets - liabilities;
 
   return (
@@ -31,6 +32,9 @@ export function NetWorthCard({ accounts }: { accounts: Account[] }) {
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">Assets</p>
             <p className="text-base font-semibold text-emerald-400">{formatCurrency(assets)}</p>
+            {manualCash > 0 && (
+              <p className="text-xs text-muted-foreground">incl. {formatCurrency(manualCash)} manual</p>
+            )}
           </div>
           <div className="w-px bg-border" />
           <div className="space-y-1">
