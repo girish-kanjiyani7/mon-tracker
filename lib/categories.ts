@@ -16,6 +16,22 @@ export const CATEGORIES: readonly string[] = Object.values(CATEGORY_GROUPS).flat
 
 export type Category = string;
 
+export interface PlaidPersonalFinanceCategory {
+  primary?: string | null;
+  detailed?: string | null;
+}
+
+/**
+ * Map a Plaid personal finance category to an app category.
+ * The detailed category disambiguates LOAN_PAYMENTS: credit card bill
+ * payments must not be lumped in with student loans.
+ */
+export function mapPlaidCategory(pfc?: PlaidPersonalFinanceCategory | null): string | null {
+  if (!pfc?.primary) return null;
+  if (pfc.detailed === "LOAN_PAYMENTS_CREDIT_CARD_PAYMENT") return "CREDIT_CARD_PAYMENT";
+  return PLAID_TO_CATEGORY[pfc.primary] ?? pfc.primary;
+}
+
 export const PLAID_TO_CATEGORY: Record<string, string> = {
   FOOD_AND_DRINK: "RESTAURANTS",
   GENERAL_MERCHANDISE: "ONLINE_SHOPPING",

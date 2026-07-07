@@ -19,18 +19,33 @@ model Item {
 }
 
 model Account {
-  id             String        @id @default(cuid())
-  plaidAccountId String        @unique
-  item           Item          @relation(fields: [itemId], references: [id])
-  itemId         String
-  name           String
-  officialName   String?
-  type           String
-  subtype        String?
-  balance        Float         @default(0)
-  cursor         String?
-  transactions   Transaction[]
-  updatedAt      DateTime      @updatedAt
+  id                String        @id @default(cuid())
+  plaidAccountId    String        @unique
+  item              Item          @relation(fields: [itemId], references: [id])
+  itemId            String
+  name              String
+  officialName      String?
+  type              String
+  subtype           String?
+  balance           Float         @default(0)
+  cursor            String?
+  statementCloseDay Int?
+  lastStatementDate DateTime?
+  transactions      Transaction[]
+  statements        Statement[]
+  updatedAt         DateTime      @updatedAt
+}
+
+model Statement {
+  id               String   @id @default(cuid())
+  account          Account  @relation(fields: [accountId], references: [id])
+  accountId        String
+  closeDate        DateTime
+  statementBalance Float?
+  source           String   @default("plaid")
+  createdAt        DateTime @default(now())
+
+  @@unique([accountId, closeDate])
 }
 
 model Transaction {

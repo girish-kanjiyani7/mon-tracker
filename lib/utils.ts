@@ -20,6 +20,12 @@ export function formatDate(date: string | Date): string {
   }).format(new Date(date));
 }
 
+/** Format a date-only string ("YYYY-MM-DD" or ISO) without timezone day-shift. */
+export function formatDateOnly(dateStr: string): string {
+  const [year, month, day] = dateStr.slice(0, 10).split("-").map(Number);
+  return formatDate(new Date(year, month - 1, day));
+}
+
 export function getCurrentMonth(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;

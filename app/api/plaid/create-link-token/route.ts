@@ -8,6 +8,7 @@ export async function POST() {
       user: { client_user_id: "local-user" },
       client_name: "Mon Tracker",
       products: [Products.Transactions],
+      optional_products: [Products.Liabilities],
       country_codes: [CountryCode.Us],
       language: "en",
     });
