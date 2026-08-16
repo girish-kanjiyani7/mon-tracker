@@ -16,6 +16,17 @@ export const CATEGORIES: readonly string[] = Object.values(CATEGORY_GROUPS).flat
 
 export type Category = string;
 
+/** Categories that represent moving money (payments/transfers/income), not spending. */
+export const PAYMENT_CATEGORIES: ReadonlySet<string> = new Set([
+  "CREDIT_CARD_PAYMENT",
+  "LOAN_PAYMENTS",
+  "STUDENT_LOANS",
+  "TRANSFER_IN",
+  "TRANSFER_OUT",
+  "SAVINGS_TRANSFER",
+  "OTHER_INCOME",
+]);
+
 export interface PlaidPersonalFinanceCategory {
   primary?: string | null;
   detailed?: string | null;

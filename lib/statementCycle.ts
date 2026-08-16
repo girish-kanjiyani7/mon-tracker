@@ -1,4 +1,5 @@
 import { formatCategoryName } from "@/lib/utils";
+import { PAYMENT_CATEGORIES } from "@/lib/categories";
 
 export interface CycleWindow {
   openDate: string; // "YYYY-MM-DD", first day of the cycle (inclusive)
@@ -32,19 +33,6 @@ export interface StatementSpendSummary {
 const MIN_CLOSE_DAY = 1;
 const MAX_CLOSE_DAY = 31;
 const MS_PER_DAY = 86_400_000;
-
-/** Categories that represent paying the card bill rather than spending.
- *  Includes raw Plaid primaries and their PLAID_TO_CATEGORY mappings
- *  (LOAN_PAYMENTS is stored as STUDENT_LOANS, TRANSFER_* as income/savings). */
-const PAYMENT_CATEGORIES: ReadonlySet<string> = new Set([
-  "CREDIT_CARD_PAYMENT",
-  "LOAN_PAYMENTS",
-  "STUDENT_LOANS",
-  "TRANSFER_IN",
-  "TRANSFER_OUT",
-  "SAVINGS_TRANSFER",
-  "OTHER_INCOME",
-]);
 
 const pad = (n: number): string => String(n).padStart(2, "0");
 

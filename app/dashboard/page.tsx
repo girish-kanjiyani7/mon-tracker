@@ -5,8 +5,9 @@ import { NetWorthCard } from "@/components/dashboard/NetWorthCard";
 import { QuickAddTransaction } from "@/components/dashboard/QuickAddTransaction";
 import { MonthNav } from "@/components/dashboard/MonthNav";
 import { BoxesGrid } from "@/components/dashboard/BoxesGrid";
+import { OverallSpentCard } from "@/components/dashboard/OverallSpentCard";
 import { UnsortedInbox } from "@/components/dashboard/UnsortedInbox";
-import { computeBoxes, splitUnsorted } from "@/lib/boxes";
+import { computeBoxes, computeOverallSpent, splitUnsorted } from "@/lib/boxes";
 import { ensureMonthBudgets } from "@/lib/ensureMonthBudgets";
 import { MONTH_PATTERN, getCurrentMonth, getMonthRangeFor, formatMonthLabel } from "@/lib/utils";
 
@@ -53,6 +54,7 @@ export default async function DashboardPage({
 
   const serialized = transactions.map((t) => ({ ...t, date: t.date.toISOString() }));
   const boxCategories = computeBoxes(budgets, serialized).map((b) => b.category);
+  const overallSpent = computeOverallSpent(serialized);
   const unsorted = splitUnsorted(serialized);
 
   return (
@@ -66,6 +68,8 @@ export default async function DashboardPage({
       </div>
 
       <NetWorthCard accounts={accounts} manualCash={manualCash} />
+
+      <OverallSpentCard total={overallSpent} />
 
       <BoxesGrid budgets={budgets} transactions={serialized} month={month} readOnly={!isCurrentMonth} />
 
