@@ -1,15 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { CATEGORY_GROUPS } from "@/lib/categories";
+import { useRouter } from "next/navigation";
 import { formatCategoryName } from "@/lib/utils";
 
-export function QuickAddTransaction({ onAdded }: { onAdded?: () => void }) {
+interface QuickAddTransactionProps {
+  boxCategories?: string[];
+  onAdded?: () => void;
+}
+
+export function QuickAddTransaction({ boxCategories = [], onAdded }: QuickAddTransactionProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [category, setCategory] = useState("");
+  const [personalCategory, setPersonalCategory] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -22,12 +28,18 @@ export function QuickAddTransaction({ onAdded }: { onAdded?: () => void }) {
     const res = await fetch("/api/transactions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: name.trim(), amount: amt, date, category: category || undefined }),
+      body: JSON.stringify({
+        name: name.trim(),
+        amount: amt,
+        date,
+        personalCategory: personalCategory || undefined,
+      }),
     });
     if (res.ok) {
-      setName(""); setAmount(""); setCategory("");
+      setName(""); setAmount(""); setPersonalCategory("");
       setDate(new Date().toISOString().slice(0, 10));
       setOpen(false);
+      router.refresh();
       onAdded?.();
     } else {
       const j = await res.json();
@@ -50,13 +62,13 @@ export function QuickAddTransaction({ onAdded }: { onAdded?: () => void }) {
   return (
     <div className="rounded-2xl border border-border/60 bg-card p-5">
       <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground mb-4">Log a Transaction</p>
-      <form onSubmit={handleSubmit} className="flex flex-wrap gap-3 items-end">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
         <input
           type="text"
           placeholder="Description (e.g. Rent, Paycheck)"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="h-9 rounded-lg border border-border/60 bg-muted px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary w-52"
+          className="h-9 w-full rounded-lg border border-border/60 bg-muted px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary sm:w-52"
           required
         />
         <div className="relative">
@@ -66,7 +78,7 @@ export function QuickAddTransaction({ onAdded }: { onAdded?: () => void }) {
             placeholder="Amount"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="h-9 w-32 rounded-lg border border-border/60 bg-muted pl-7 pr-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+            className="h-9 w-full rounded-lg border border-border/60 bg-muted pl-7 pr-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary sm:w-32"
             step="0.01"
             required
           />
@@ -76,20 +88,16 @@ export function QuickAddTransaction({ onAdded }: { onAdded?: () => void }) {
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="h-9 rounded-lg border border-border/60 bg-muted px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+          className="h-9 w-full rounded-lg border border-border/60 bg-muted px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary sm:w-auto"
         />
         <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          className="h-9 rounded-lg border border-border/60 bg-muted px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+          value={personalCategory}
+          onChange={(e) => setPersonalCategory(e.target.value)}
+          className="h-9 w-full rounded-lg border border-border/60 bg-muted px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary sm:w-auto"
         >
-          <option value="">No category</option>
-          {Object.entries(CATEGORY_GROUPS).map(([group, cats]) => (
-            <optgroup key={group} label={group}>
-              {cats.map((c) => (
-                <option key={c} value={c}>{formatCategoryName(c)}</option>
-              ))}
-            </optgroup>
+          <option value="">Leave unsorted</option>
+          {boxCategories.map((c) => (
+            <option key={c} value={c}>{formatCategoryName(c)}</option>
           ))}
         </select>
         <div className="flex gap-2">

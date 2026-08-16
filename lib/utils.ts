@@ -31,6 +31,34 @@ export function getCurrentMonth(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
+export const MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+/** "2026-08" -> "2026-07" */
+export function prevMonth(month: string): string {
+  const [y, m] = month.split("-").map(Number);
+  const d = new Date(y, m - 2, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+/** "2026-08" -> "2026-09" */
+export function nextMonth(month: string): string {
+  const [y, m] = month.split("-").map(Number);
+  const d = new Date(y, m, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+/** "2026-08" -> "August 2026" */
+export function formatMonthLabel(month: string): string {
+  const [y, m] = month.split("-").map(Number);
+  return new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(new Date(y, m - 1, 1));
+}
+
+/** First/last day of a "YYYY-MM" month as date-only strings. */
+export function getMonthRangeFor(month: string): { from: string; to: string } {
+  const [y, m] = month.split("-").map(Number);
+  return getMonthRange(new Date(y, m - 1, 1));
+}
+
 export function getMonthRange(date = new Date()): { from: string; to: string } {
   const y = date.getFullYear();
   const m = date.getMonth();

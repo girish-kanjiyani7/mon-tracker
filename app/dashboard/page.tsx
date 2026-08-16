@@ -2,72 +2,76 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { NetWorthCard } from "@/components/dashboard/NetWorthCard";
-import { SpendingByCategory } from "@/components/dashboard/SpendingByCategory";
-import { BudgetProgress } from "@/components/dashboard/BudgetProgress";
-import { RecentTransactions } from "@/components/dashboard/RecentTransactions";
-import { DateRangePicker } from "@/components/DateRangePicker";
 import { QuickAddTransaction } from "@/components/dashboard/QuickAddTransaction";
-import { groupByCategory, getMonthRange, getCurrentMonth } from "@/lib/utils";
-
-const DATE_PATTERN = /^\d{4}-(0[1-9]|1[0-2])-([0-2]\d|3[01])$/;
+import { MonthNav } from "@/components/dashboard/MonthNav";
+import { BoxesGrid } from "@/components/dashboard/BoxesGrid";
+import { UnsortedInbox } from "@/components/dashboard/UnsortedInbox";
+import { computeBoxes, splitUnsorted } from "@/lib/boxes";
+import { ensureMonthBudgets } from "@/lib/ensureMonthBudgets";
+import { MONTH_PATTERN, getCurrentMonth, getMonthRangeFor, formatMonthLabel } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ from?: string; to?: string }>;
+  searchParams: Promise<{ month?: string }>;
 }) {
   const session = await auth();
   if (!session) redirect("/");
 
-  const { from: fromParam, to: toParam } = await searchParams;
-  const defaults = getMonthRange();
-  const from = fromParam && DATE_PATTERN.test(fromParam) ? fromParam : defaults.from;
-  const to = toParam && DATE_PATTERN.test(toParam) ? toParam : defaults.to;
+  const { month: monthParam } = await searchParams;
+  const currentMonth = getCurrentMonth();
+  const month = monthParam && MONTH_PATTERN.test(monthParam) ? monthParam : currentMonth;
+  const isCurrentMonth = month === currentMonth;
 
+  if (isCurrentMonth) {
+    await ensureMonthBudgets(month);
+  }
+
+  const { from, to } = getMonthRangeFor(month);
   const start = new Date(from);
   const end = new Date(to);
   end.setDate(end.getDate() + 1);
 
-  const month = getCurrentMonth();
-
-  const [accounts, transactions, budgets, recentTx, manualTx] = await Promise.all([
+  const [accounts, transactions, budgets, manualTx] = await Promise.all([
     prisma.account.findMany({ include: { item: { select: { institutionName: true } } } }),
-    prisma.transaction.findMany({ where: { date: { gte: start, lt: end } } }),
-    prisma.budget.findMany({ where: { month } }),
     prisma.transaction.findMany({
       where: { date: { gte: start, lt: end } },
-      select: { id: true, name: true, merchantName: true, category: true, personalCategory: true, amount: true, date: true, pending: true },
+      select: {
+        id: true, name: true, merchantName: true, category: true, personalCategory: true,
+        amount: true, date: true, pending: true, manual: true,
+      },
       orderBy: { date: "desc" },
-      take: 10,
     }),
+    prisma.budget.findMany({ where: { month } }),
     prisma.transaction.findMany({ where: { manual: true }, select: { amount: true } }),
   ]);
 
   // net manual cash: negative Plaid amount = income, so flip sign
   const manualCash = manualTx.reduce((sum, t) => sum - t.amount, 0);
 
-  const categoryData = groupByCategory(transactions);
+  const serialized = transactions.map((t) => ({ ...t, date: t.date.toISOString() }));
+  const boxCategories = computeBoxes(budgets, serialized).map((b) => b.category);
+  const unsorted = splitUnsorted(serialized);
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-1">{from} – {to}</p>
+          <p className="text-sm text-muted-foreground mt-1">{formatMonthLabel(month)}</p>
         </div>
-        <DateRangePicker from={from} to={to} />
+        <MonthNav month={month} />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <NetWorthCard accounts={accounts} manualCash={manualCash} />
-        <SpendingByCategory data={categoryData} />
-        <BudgetProgress budgets={budgets} transactions={transactions} />
-      </div>
+      <NetWorthCard accounts={accounts} manualCash={manualCash} />
 
-      <RecentTransactions transactions={recentTx} />
-      <QuickAddTransaction />
+      <BoxesGrid budgets={budgets} transactions={serialized} month={month} readOnly={!isCurrentMonth} />
+
+      <UnsortedInbox transactions={unsorted} boxCategories={boxCategories} readOnly={!isCurrentMonth} />
+
+      {isCurrentMonth && <QuickAddTransaction boxCategories={boxCategories} />}
     </div>
   );
 }

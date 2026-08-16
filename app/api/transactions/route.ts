@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const accountId = searchParams.get("accountId") ?? undefined;
     const category = searchParams.get("category") ?? undefined;
+    const uncategorized = searchParams.get("uncategorized") === "true";
     const search = searchParams.get("search") ?? undefined;
     const from = searchParams.get("from");
     const to = searchParams.get("to");
@@ -35,10 +36,15 @@ export async function GET(req: NextRequest) {
     if (category && category.length > MAX_PARAM_LENGTH) {
       return NextResponse.json({ error: "Invalid category" }, { status: 400 });
     }
+    if (uncategorized && category) {
+      return NextResponse.json({ error: "Cannot combine uncategorized with category" }, { status: 400 });
+    }
 
     const where: Record<string, unknown> = {};
     if (accountId) where.accountId = accountId;
-    if (category) {
+    if (uncategorized) {
+      where.personalCategory = null;
+    } else if (category) {
       where.OR = [
         { personalCategory: category },
         { personalCategory: null, category: category },
@@ -79,7 +85,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, amount, date, category, merchantName } = await req.json();
+    const { name, amount, date, category, merchantName, personalCategory } = await req.json();
 
     if (!name || typeof name !== "string" || name.trim().length === 0 || name.length > 200) {
       return NextResponse.json({ error: "Invalid name" }, { status: 400 });
@@ -93,6 +99,9 @@ export async function POST(req: NextRequest) {
     if (category && !VALID_CATEGORIES.has(category)) {
       return NextResponse.json({ error: "Invalid category" }, { status: 400 });
     }
+    if (personalCategory && !VALID_CATEGORIES.has(personalCategory)) {
+      return NextResponse.json({ error: "Invalid personalCategory" }, { status: 400 });
+    }
 
     const transaction = await prisma.transaction.create({
       data: {
@@ -101,6 +110,7 @@ export async function POST(req: NextRequest) {
         amount,
         date: new Date(date),
         category: category || null,
+        personalCategory: personalCategory || null,
         manual: true,
       },
     });

@@ -1,4 +1,15 @@
-import { formatCurrency, formatCategoryName, formatDate, groupByCategory, getCurrentMonth, cn } from "@/lib/utils";
+import {
+  formatCurrency,
+  formatCategoryName,
+  formatDate,
+  groupByCategory,
+  getCurrentMonth,
+  prevMonth,
+  nextMonth,
+  formatMonthLabel,
+  getMonthRangeFor,
+  cn,
+} from "@/lib/utils";
 
 describe("formatCurrency", () => {
   it("formats positive USD amount", () => {
@@ -80,5 +91,38 @@ describe("formatDate", () => {
 describe("cn", () => {
   it("merges class names", () => {
     expect(cn("foo", "bar")).toBe("foo bar");
+  });
+});
+
+describe("prevMonth", () => {
+  it("steps back a month within a year", () => {
+    expect(prevMonth("2026-08")).toBe("2026-07");
+  });
+  it("crosses a year boundary", () => {
+    expect(prevMonth("2026-01")).toBe("2025-12");
+  });
+});
+
+describe("nextMonth", () => {
+  it("steps forward a month within a year", () => {
+    expect(nextMonth("2026-07")).toBe("2026-08");
+  });
+  it("crosses a year boundary", () => {
+    expect(nextMonth("2025-12")).toBe("2026-01");
+  });
+});
+
+describe("formatMonthLabel", () => {
+  it("formats a month string as a readable label", () => {
+    expect(formatMonthLabel("2026-08")).toBe("August 2026");
+  });
+});
+
+describe("getMonthRangeFor", () => {
+  it("returns first and last day of the given month", () => {
+    expect(getMonthRangeFor("2026-02")).toEqual({ from: "2026-02-01", to: "2026-02-28" });
+  });
+  it("handles a leap year February", () => {
+    expect(getMonthRangeFor("2024-02")).toEqual({ from: "2024-02-01", to: "2024-02-29" });
   });
 });

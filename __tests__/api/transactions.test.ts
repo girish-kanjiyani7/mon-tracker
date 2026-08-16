@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 const mockTransaction = {
   findMany: jest.fn(),
   count: jest.fn(),
+  create: jest.fn(),
 };
 
 const mockPrisma$transaction = jest.fn();
@@ -15,7 +16,7 @@ jest.mock("@/lib/db", () => ({
 }));
 jest.mock("@/lib/plaid", () => ({ plaidClient: {} }));
 
-import { GET } from "@/app/api/transactions/route";
+import { GET, POST } from "@/app/api/transactions/route";
 
 function makeReq(search: string = ""): NextRequest {
   return new NextRequest(`http://localhost/api/transactions${search}`);
@@ -136,5 +137,58 @@ describe("GET /api/transactions", () => {
     mockPrisma$transaction.mockRejectedValue(new Error("db down"));
     const res = await GET(makeReq());
     expect(res.status).toBe(500);
+  });
+
+  it("filters uncategorized transactions", async () => {
+    setupDb();
+    const res = await GET(makeReq("?uncategorized=true"));
+    expect(res.status).toBe(200);
+    const findManyArgs = mockTransaction.findMany.mock.calls[0][0];
+    expect(findManyArgs.where.personalCategory).toBeNull();
+  });
+
+  it("returns 400 when uncategorized combined with category", async () => {
+    const res = await GET(makeReq("?uncategorized=true&category=FOOD_AND_DRINK"));
+    expect(res.status).toBe(400);
+  });
+});
+
+function jsonReq(body: unknown): NextRequest {
+  return new NextRequest("http://localhost/api/transactions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+const validPost = { name: "Rent", amount: 1500, date: "2026-05-01" };
+
+describe("POST /api/transactions", () => {
+  it("creates a manual transaction", async () => {
+    mockTransaction.create.mockResolvedValue({ id: "tx1", ...validPost, manual: true });
+    const res = await POST(jsonReq(validPost));
+    expect(res.status).toBe(201);
+    expect(mockTransaction.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ manual: true, personalCategory: null }) })
+    );
+  });
+
+  it("stores a valid personalCategory", async () => {
+    mockTransaction.create.mockResolvedValue({ id: "tx1", ...validPost, manual: true });
+    const res = await POST(jsonReq({ ...validPost, personalCategory: "RENT" }));
+    expect(res.status).toBe(201);
+    expect(mockTransaction.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ personalCategory: "RENT" }) })
+    );
+  });
+
+  it("returns 400 for an invalid personalCategory", async () => {
+    const res = await POST(jsonReq({ ...validPost, personalCategory: "NOT_A_REAL_CATEGORY" }));
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 400 for missing name", async () => {
+    const res = await POST(jsonReq({ amount: 10, date: "2026-05-01" }));
+    expect(res.status).toBe(400);
   });
 });
