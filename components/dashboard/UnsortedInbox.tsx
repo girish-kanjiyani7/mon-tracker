@@ -18,10 +18,24 @@ export function UnsortedInbox({ transactions, boxCategories, readOnly }: Unsorte
   const [activeId, setActiveId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => setRows(transactions), [transactions]);
 
   const active = rows.find((t) => t.id === activeId) ?? null;
+
+  async function handleDelete(id: string) {
+    if (!window.confirm("Delete this transaction? This can't be undone.")) return;
+    setDeletingId(id);
+    const res = await fetch(`/api/transactions/${id}`, { method: "DELETE" });
+    setDeletingId(null);
+    if (res.ok) {
+      setRows((prev) => prev.filter((t) => t.id !== id));
+      router.refresh();
+    } else {
+      setError("Couldn't delete that transaction — try again.");
+    }
+  }
 
   async function handleAssign(category: string) {
     if (!activeId) return;
@@ -59,28 +73,39 @@ export function UnsortedInbox({ transactions, boxCategories, readOnly }: Unsorte
       ) : (
         <div className="divide-y divide-border/40">
           {rows.map((tx) => (
-            <button
-              key={tx.id}
-              type="button"
-              disabled={readOnly}
-              onClick={() => setActiveId(tx.id)}
-              className="flex w-full items-center justify-between gap-3 px-5 py-3.5 text-left transition-colors hover:bg-white/2 active:bg-white/5 disabled:pointer-events-none min-h-11"
-            >
-              <div className="min-w-0">
-                <p className="text-sm font-medium truncate">{tx.merchantName ?? tx.name}</p>
-                <div className="flex items-center gap-2">
-                  <p className="text-xs text-muted-foreground">{formatDateOnly(String(tx.date))}</p>
-                  {tx.category && (
-                    <span className="rounded-md border border-border/60 px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                      Suggested: {formatCategoryName(tx.category)}
-                    </span>
-                  )}
+            <div key={tx.id} className="flex w-full items-center gap-2 px-5 py-3.5 min-h-11">
+              <button
+                type="button"
+                disabled={readOnly}
+                onClick={() => setActiveId(tx.id)}
+                className="flex flex-1 min-w-0 items-center justify-between gap-3 text-left transition-colors disabled:pointer-events-none"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{tx.merchantName ?? tx.name}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs text-muted-foreground">{formatDateOnly(String(tx.date))}</p>
+                    {tx.category && (
+                      <span className="rounded-md border border-border/60 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                        Suggested: {formatCategoryName(tx.category)}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-              <p className={`shrink-0 text-sm font-semibold tabular-nums ${tx.amount < 0 ? "text-emerald-400" : ""}`}>
-                {tx.amount < 0 ? "+" : "−"}{formatCurrency(Math.abs(tx.amount))}
-              </p>
-            </button>
+                <p className={`shrink-0 text-sm font-semibold tabular-nums ${tx.amount < 0 ? "text-emerald-400" : ""}`}>
+                  {tx.amount < 0 ? "+" : "−"}{formatCurrency(Math.abs(tx.amount))}
+                </p>
+              </button>
+              {!readOnly && tx.manual && (
+                <button
+                  type="button"
+                  disabled={deletingId === tx.id}
+                  onClick={() => handleDelete(tx.id)}
+                  className="shrink-0 rounded-md border border-border/60 px-2 py-1 text-xs text-rose-400 hover:text-rose-300 transition-colors disabled:opacity-50"
+                >
+                  Delete
+                </button>
+              )}
+            </div>
           ))}
         </div>
       )}

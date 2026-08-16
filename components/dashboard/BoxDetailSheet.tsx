@@ -35,6 +35,14 @@ export function BoxDetailSheet({ box, transactions, boxCategories, readOnly, onO
     router.refresh();
   }
 
+  async function deleteTransaction(id: string) {
+    if (!window.confirm("Delete this transaction? This can't be undone.")) return;
+    setBusyTxId(id);
+    await fetch(`/api/transactions/${id}`, { method: "DELETE" });
+    setBusyTxId(null);
+    router.refresh();
+  }
+
   async function handleSaveLimit() {
     if (!box?.budgetId) return;
     const monthlyLimit = parseFloat(limitInput);
@@ -109,6 +117,16 @@ export function BoxDetailSheet({ box, transactions, boxCategories, readOnly, onO
                           >
                             Unsort
                           </button>
+                          {tx.manual && (
+                            <button
+                              type="button"
+                              disabled={busyTxId === tx.id}
+                              onClick={() => deleteTransaction(tx.id)}
+                              className="rounded-md border border-border/60 px-2 py-1 text-xs text-rose-400 hover:text-rose-300 transition-colors disabled:opacity-50"
+                            >
+                              Delete
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
