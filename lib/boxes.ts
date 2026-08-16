@@ -1,3 +1,5 @@
+import { PAYMENT_CATEGORIES } from "@/lib/categories";
+
 export interface BoxBudget {
   id: string;
   category: string;
@@ -67,6 +69,19 @@ export function computeBoxes(budgets: readonly BoxBudget[], transactions: readon
   }
 
   return boxes;
+}
+
+/**
+ * Total spent across all boxes for the month: sorted transactions only
+ * (matches computeBoxes membership), excluding payment/transfer categories.
+ */
+export function computeOverallSpent(transactions: readonly BoxTransaction[]): number {
+  let total = 0;
+  for (const tx of transactions) {
+    if (!tx.personalCategory || PAYMENT_CATEGORIES.has(tx.personalCategory)) continue;
+    total += tx.amount;
+  }
+  return Math.round(total * 100) / 100;
 }
 
 /** Transactions in the month that have not yet been sorted into a box. */

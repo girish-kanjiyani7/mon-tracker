@@ -1,19 +1,15 @@
 import { formatCurrency } from "@/lib/utils";
+import { computeNetWorth, type NetWorthAccount } from "@/lib/netWorth";
 
-interface Account {
-  type: string;
-  balance: number;
-}
-
-export function NetWorthCard({ accounts, manualCash = 0 }: { accounts: Account[]; manualCash?: number }) {
-  const accountAssets = accounts
-    .filter((a) => a.type !== "credit")
-    .reduce((sum, a) => sum + a.balance, 0);
-  const liabilities = accounts
-    .filter((a) => a.type === "credit")
-    .reduce((sum, a) => sum + a.balance, 0);
-  const assets = accountAssets + Math.max(0, manualCash);
-  const netWorth = assets - liabilities;
+export function NetWorthCard({
+  accounts,
+  manualCash = 0,
+}: {
+  accounts: NetWorthAccount[];
+  manualCash?: number;
+}) {
+  const { accountAssets, creditBalances, netWorth } = computeNetWorth(accounts, manualCash);
+  const assets = accountAssets + manualCash;
 
   return (
     <div className="relative overflow-hidden rounded-2xl p-6 gradient-border"
@@ -32,14 +28,15 @@ export function NetWorthCard({ accounts, manualCash = 0 }: { accounts: Account[]
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">Assets</p>
             <p className="text-base font-semibold text-emerald-400">{formatCurrency(assets)}</p>
-            {manualCash > 0 && (
+            {manualCash !== 0 && (
               <p className="text-xs text-muted-foreground">incl. {formatCurrency(manualCash)} manual</p>
             )}
           </div>
           <div className="w-px bg-border" />
           <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Liabilities</p>
-            <p className="text-base font-semibold text-rose-400">{formatCurrency(liabilities)}</p>
+            <p className="text-xs text-muted-foreground">Credit cards</p>
+            <p className="text-base font-semibold text-rose-400">{formatCurrency(creditBalances)}</p>
+            <p className="text-xs text-muted-foreground">not counted in net worth</p>
           </div>
         </div>
 
